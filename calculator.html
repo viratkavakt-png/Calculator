@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Akash Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #222230;
+      --accent: #c8a96e;
+      --accent2: #7c6fcd;
+      --text: #e8e4d8;
+      --muted: #5a5870;
+      --btn-bg: #1a1a24;
+      --btn-hover: #252535;
+      --eq-bg: #c8a96e;
+      --eq-text: #0a0a0f;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'DM Mono', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--text);
+    }
+
+    /* ── SPLASH ── */
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 1s ease, visibility 1s ease;
+    }
+    #splash.hide {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .logo-wrap {
+      position: relative;
+      text-align: center;
+    }
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3rem, 12vw, 7rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: transparent;
+      -webkit-text-stroke: 1.5px var(--accent);
+      animation: logoReveal 1.2s cubic-bezier(0.22,1,0.36,1) forwards;
+      opacity: 0;
+    }
+    .logo-sub {
+      font-size: 0.7rem;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.5rem;
+      animation: logoReveal 1.2s 0.3s cubic-bezier(0.22,1,0.36,1) forwards;
+      opacity: 0;
+    }
+    .logo-line {
+      width: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      margin: 1.2rem auto;
+      animation: lineGrow 1s 0.5s ease forwards;
+    }
+
+    @keyframes logoReveal {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes lineGrow {
+      from { width: 0; }
+      to   { width: 180px; }
+    }
+
+    /* ── CALCULATOR ── */
+    #app {
+      opacity: 0;
+      transform: translateY(30px) scale(0.96);
+      transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.22,1,0.36,1);
+      pointer-events: none;
+    }
+    #app.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+
+    .calc-shell {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      width: 340px;
+      padding: 28px 24px 24px;
+      box-shadow:
+        0 0 0 1px rgba(200,169,110,0.06),
+        0 40px 80px rgba(0,0,0,0.6),
+        0 0 60px rgba(124,111,205,0.08);
+    }
+
+    /* header */
+    .calc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .calc-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+    }
+    .calc-tag {
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    /* display */
+    .display {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .display-expr {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      min-height: 18px;
+      transition: all 0.2s;
+    }
+    .display-result {
+      font-size: 2.4rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      transition: all 0.15s ease;
+      word-break: break-all;
+    }
+    .display-result.flash {
+      color: var(--accent);
+    }
+
+    /* grid */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      background: var(--btn-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 1rem;
+      font-weight: 400;
+      border-radius: 12px;
+      height: 58px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      letter-spacing: 0.03em;
+      position: relative;
+      overflow: hidden;
+    }
+    button:hover {
+      background: var(--btn-hover);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    button:active {
+      transform: scale(0.93);
+    }
+
+    /* ripple */
+    button::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(200,169,110,0.2) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    button:active::after { opacity: 1; }
+
+    /* variants */
+    .btn-op {
+      color: var(--accent2);
+      border-color: rgba(124,111,205,0.2);
+      background: rgba(124,111,205,0.06);
+    }
+    .btn-op:hover { background: rgba(124,111,205,0.13); }
+
+    .btn-fn {
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+    }
+
+    .btn-eq {
+      background: var(--accent);
+      color: var(--eq-text);
+      border-color: var(--accent);
+      font-size: 1.3rem;
+    }
+    .btn-eq:hover { background: #d4b87c; box-shadow: 0 0 20px rgba(200,169,110,0.35); }
+
+    .btn-zero { grid-column: span 2; }
+
+    .btn-dot { font-size: 1.4rem; }
+  </style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="logo-wrap">
+    <div class="logo-text">Akash</div>
+    <div class="logo-line"></div>
+    <div class="logo-sub">Calculator</div>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<div id="app">
+  <div class="calc-shell">
+    <div class="calc-header">
+      <span class="calc-brand">Akash</span>
+      <span class="calc-tag">Calc v1</span>
+    </div>
+
+    <div class="display">
+      <div class="display-expr" id="expr"></div>
+      <div class="display-result" id="result">0</div>
+    </div>
+
+    <div class="btn-grid">
+      <!-- row 1 -->
+      <button class="btn-fn" onclick="clearAll()">AC</button>
+      <button class="btn-fn" onclick="toggleSign()">+/−</button>
+      <button class="btn-fn" onclick="percent()">%</button>
+      <button class="btn-op" onclick="setOp('/')">÷</button>
+      <!-- row 2 -->
+      <button onclick="digit('7')">7</button>
+      <button onclick="digit('8')">8</button>
+      <button onclick="digit('9')">9</button>
+      <button class="btn-op" onclick="setOp('*')">×</button>
+      <!-- row 3 -->
+      <button onclick="digit('4')">4</button>
+      <button onclick="digit('5')">5</button>
+      <button onclick="digit('6')">6</button>
+      <button class="btn-op" onclick="setOp('-')">−</button>
+      <!-- row 4 -->
+      <button onclick="digit('1')">1</button>
+      <button onclick="digit('2')">2</button>
+      <button onclick="digit('3')">3</button>
+      <button class="btn-op" onclick="setOp('+')">+</button>
+      <!-- row 5 -->
+      <button class="btn-zero btn-fn btn-dot" onclick="digit('0')">0</button>
+      <button class="btn-dot" onclick="dot()">·</button>
+      <button class="btn-eq" onclick="calculate()">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Splash timing ──
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.getElementById('splash').classList.add('hide');
+      setTimeout(() => {
+        document.getElementById('splash').style.display = 'none';
+        document.getElementById('app').classList.add('show');
+      }, 1000);
+    }, 2200);
+  });
+
+  // ── Calculator logic ──
+  let current = '0', stored = null, operator = null, fresh = false;
+
+  const R = document.getElementById('result');
+  const E = document.getElementById('expr');
+
+  function display(val) {
+    R.textContent = parseFloat(val).toLocaleString('en', { maximumFractionDigits: 10 }).replace(/\.(\d+)/, (_, d) => '.' + d) || '0';
+    // keep raw decimal dot visible if user just typed it
+    if (String(val).endsWith('.')) R.textContent += '.';
+  }
+
+  function flash() {
+    R.classList.add('flash');
+    setTimeout(() => R.classList.remove('flash'), 300);
+  }
+
+  function digit(d) {
+    if (fresh) { current = d; fresh = false; }
+    else current = current === '0' ? d : current + d;
+    display(current);
+  }
+
+  function dot() {
+    if (fresh) { current = '0.'; fresh = false; }
+    else if (!current.includes('.')) current += '.';
+    R.textContent = current;
+  }
+
+  function clearAll() {
+    current = '0'; stored = null; operator = null; fresh = false;
+    E.textContent = ''; display('0');
+  }
+
+  function toggleSign() {
+    current = String(-parseFloat(current));
+    display(current);
+  }
+
+  function percent() {
+    current = String(parseFloat(current) / 100);
+    display(current);
+  }
+
+  function setOp(op) {
+    if (operator && !fresh) calculate(true);
+    stored = parseFloat(current);
+    operator = op;
+    fresh = true;
+    const sym = { '+': '+', '-': '−', '*': '×', '/': '÷' }[op];
+    E.textContent = `${stored} ${sym}`;
+  }
+
+  function calculate(chain = false) {
+    if (operator === null || stored === null) return;
+    const b = parseFloat(current);
+    let res;
+    switch (operator) {
+      case '+': res = stored + b; break;
+      case '-': res = stored - b; break;
+      case '*': res = stored * b; break;
+      case '/': res = b === 0 ? 'Error' : stored / b; break;
+    }
+    const sym = { '+': '+', '-': '−', '*': '×', '/': '÷' }[operator];
+    if (!chain) {
+      E.textContent = `${stored} ${sym} ${b} =`;
+      flash();
+    }
+    current = String(res);
+    display(current);
+    if (!chain) { operator = null; stored = null; fresh = true; }
+  }
+
+  // Keyboard support
+  document.addEventListener('keydown', e => {
+    if (e.key >= '0' && e.key <= '9') digit(e.key);
+    else if (e.key === '.') dot();
+    else if (e.key === '+') setOp('+');
+    else if (e.key === '-') setOp('-');
+    else if (e.key === '*') setOp('*');
+    else if (e.key === '/') { e.preventDefault(); setOp('/'); }
+    else if (e.key === 'Enter' || e.key === '=') calculate();
+    else if (e.key === 'Escape') clearAll();
+    else if (e.key === 'Backspace') {
+      current = current.length > 1 ? current.slice(0, -1) : '0';
+      display(current);
+    }
+  });
+</script>
+</body>
+</html>
